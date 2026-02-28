@@ -1,7 +1,18 @@
 #!/bin/sh
 apt-get update
 
-apt-get -yq install \
+echo "Running with Thomas' changes!"
+
+INSTALL_RECOMMENDS=true
+
+if [ "$INSTALL_RECOMMENDS" = "true" ]; then
+    INSTALL_RECOMMENDS_FLAG=""
+else
+    INSTALL_RECOMMENDS_FLAG="--no-install-recommends"
+fi
+
+START=$(date +%s)
+apt-get -yq $INSTALL_RECOMMENDS_FLAG install \
     build-essential \
     pkg-config \
     ccache \
@@ -32,4 +43,6 @@ apt-get -yq install \
 # https://deb.sury.org/
 sudo add-apt-repository ppa:ondrej/php
 apt-get update
-apt-get -yq install libmpdec-dev
+apt-get -yq $INSTALL_RECOMMENDS_FLAG install libmpdec-dev
+END=$(date +%s)
+echo "posix-deps-apt.sh took $((END - START))s"
