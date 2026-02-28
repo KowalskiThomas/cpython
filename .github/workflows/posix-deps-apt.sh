@@ -33,7 +33,7 @@ if [ "$ADDITIONAL_OPTIM" = "true" ]; then
     fi
 fi
 
-INSTALL_RECOMMENDS=true
+INSTALL_RECOMMENDS=false
 
 if [ "$INSTALL_RECOMMENDS" = "true" ]; then
     INSTALL_RECOMMENDS_FLAG=""
