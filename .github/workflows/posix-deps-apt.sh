@@ -5,7 +5,7 @@ echo "Running with Thomas' changes!"
 
 START=$(date +%s)
 
-ADDITIONAL_OPTIM="true"
+ADDITIONAL_OPTIM="false"
 if [ "$ADDITIONAL_OPTIM" = "true" ]; then
     INITRAMFS_CONF="/etc/initramfs-tools/update-initramfs.conf"
     DPKG_TRIGGERS="/var/lib/dpkg/triggers/File"
