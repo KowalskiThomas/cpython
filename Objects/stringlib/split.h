@@ -113,14 +113,12 @@ STRINGLIB(split_char)(PyObject* str_obj,
 
     i = j = 0;
     while ((j < str_len) && (maxcount-- > 0)) {
-        for(; j < str_len; j++) {
-            /* I found that using memchr makes no difference */
-            if (str[j] == ch) {
-                SPLIT_ADD(str, i, j);
-                i = j = j + 1;
-                break;
-            }
-        }
+        Py_ssize_t pos = STRINGLIB(find_char)(str + j, str_len - j, ch);
+        if (pos < 0)
+            break;
+        pos += j;
+        SPLIT_ADD(str, i, pos);
+        i = j = pos + 1;
     }
 #if !STRINGLIB_MUTABLE
     if (count == 0 && STRINGLIB_CHECK_EXACT(str_obj)) {
@@ -254,13 +252,11 @@ STRINGLIB(rsplit_char)(PyObject* str_obj,
 
     i = j = str_len - 1;
     while ((i >= 0) && (maxcount-- > 0)) {
-        for(; i >= 0; i--) {
-            if (str[i] == ch) {
-                SPLIT_ADD(str, i + 1, j + 1);
-                j = i = i - 1;
-                break;
-            }
-        }
+        Py_ssize_t pos = STRINGLIB(rfind_char)(str, i + 1, ch);
+        if (pos < 0)
+            break;
+        SPLIT_ADD(str, pos + 1, j + 1);
+        j = i = pos - 1;
     }
 #if !STRINGLIB_MUTABLE
     if (count == 0 && STRINGLIB_CHECK_EXACT(str_obj)) {
