@@ -979,7 +979,7 @@ class AbstractBasicAuthHandler:
         if unsupported is not None:
             raise ValueError("AbstractBasicAuthHandler does not "
                              "support the following scheme: %r"
-                             % (scheme,))
+                             % (unsupported,))
 
     def retry_http_basic_auth(self, host, req, realm):
         user, pw = self.passwd.find_user_password(realm, host)

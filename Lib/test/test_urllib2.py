@@ -22,7 +22,11 @@ from urllib.request import (Request, OpenerDirector, HTTPBasicAuthHandler,
                             HTTPPasswordMgrWithPriorAuth, _parse_proxy,
                             _proxy_bypass_winreg_override,
                             _proxy_bypass_macosx_sysconf,
-                            AbstractDigestAuthHandler)
+                            AbstractDigestAuthHandler,
+                            AbstractBasicAuthHandler,
+                            HTTPPasswordMgr,
+                            )
+
 from urllib.parse import urlsplit
 import urllib.error
 import http.client
@@ -2117,6 +2121,30 @@ class RequestTests(unittest.TestCase):
         for url in urls:
             req = Request(url)
             self.assertEqual(req.get_full_url(), req.full_url)
+
+
+class TestBasicAuth(unittest.TestCase):
+    def test_unsupported_auth_error_message(self):
+        from email.message import Message
+
+        class TestHandler(AbstractBasicAuthHandler):
+            auth_header = 'Authorization'
+
+            def __init__(self):
+                super().__init__(HTTPPasswordMgr())
+                self.parent = None
+
+
+        handler = TestHandler()
+
+        headers = Message()
+        # Basic is supported, but unusable (no realm)
+        headers['www-authenticate'] = 'Basic'
+        # Bogus is not supported
+        headers['www-authenticate'] = 'Bogus realm="test"'
+
+        with self.assertRaises(ValueError, msg="does not support the following scheme: 'Bogus'"):
+            handler.http_error_auth_reqed('www-authenticate', 'http://example.com', None, headers)
 
 
 if __name__ == "__main__":
