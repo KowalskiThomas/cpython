@@ -1939,6 +1939,10 @@ class ZipFile:
              open(targetpath, "wb") as target:
             shutil.copyfileobj(source, target)
 
+        attr = member.external_attr >> 16
+        if attr:
+            os.chmod(targetpath, stat.S_IMODE(attr))
+
         return targetpath
 
     def _writecheck(self, zinfo):

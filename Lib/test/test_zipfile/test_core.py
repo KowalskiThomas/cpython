@@ -1820,6 +1820,36 @@ class ExtractTests(unittest.TestCase):
 
             unlink(TESTFN2)
 
+    @unittest.skipUnless(hasattr(os, 'chmod'), 'requires os.chmod')
+    def test_extract_preserves_unix_permissions(self):
+        """Extracted files should retain the Unix permissions stored in the archive."""
+        with temp_cwd():
+            # Create a file with restrictive permissions and archive it
+            src = TESTFN
+            with open(src, 'w') as f:
+                f.write('sensitive data')
+            os.chmod(src, 0o600)
+
+            with zipfile.ZipFile(TESTFN2, 'w') as zf:
+                zf.write(src, 'secret.txt')
+
+            unlink(src)
+
+            # Verify the permissions were stored
+            with zipfile.ZipFile(TESTFN2, 'r') as zf:
+                info = zf.getinfo('secret.txt')
+                stored = stat.S_IMODE(info.external_attr >> 16)
+                self.assertEqual(stored, 0o600)
+
+                # Extract and check permissions are restored
+                zf.extract('secret.txt')
+                extracted_mode = stat.S_IMODE(os.stat('secret.txt').st_mode)
+                self.assertEqual(extracted_mode, 0o600)
+
+                unlink('secret.txt')
+
+            unlink(TESTFN2)
+
 
 class OverwriteTests(archiver_tests.OverwriteTests, unittest.TestCase):
     testdir = TESTFN
