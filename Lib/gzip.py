@@ -484,14 +484,21 @@ def _read_exact(fp, n):
     return data
 
 
-def _read_until_null(fp, append_to):
+_MAX_GZIP_HEADER_FIELD_SIZE = 65536  # max bytes for FNAME / FCOMMENT fields
+
+
+def _read_until_null(fp, append_to: bytearray) -> None:
     '''Read until the first encountered null byte in fp.
-       Append to given byte array object'''
-    while True:
+       Append to given byte array object.
+       Raises BadGzipFile if more than _MAX_GZIP_HEADER_FIELD_SIZE bytes are
+       read without finding a NUL, bounding memory use during header parsing.'''
+    for _ in range(_MAX_GZIP_HEADER_FIELD_SIZE + 1):
         s = fp.read(1)
         append_to += s
         if not s or s == b'\000':
-            break
+            return
+    raise BadGzipFile('Header field exceeds maximum size '
+                      f'({_MAX_GZIP_HEADER_FIELD_SIZE} bytes)')
 
 
 def _read_gzip_header(fp):

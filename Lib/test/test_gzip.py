@@ -824,6 +824,42 @@ class TestGzip(BaseTest):
                          f"Corrupted gzip header. Checksums do not "
                          f"match: {true_crc:04x} != {corrupted_crc:04x}")
 
+    def test_header_field_size_limit(self):
+        # Regression test: _read_until_null must reject streams where FNAME or
+        # FCOMMENT exceeds _MAX_GZIP_HEADER_FIELD_SIZE bytes without a NUL,
+        # preventing unbounded memory growth during header parsing (gh-XXXXX).
+        FNAME    = 0x08
+        FCOMMENT = 0x10
+        FHCRC    = 0x02
+
+        def make_header(flags: int) -> bytes:
+            return (
+                b"\x1f\x8b\x08"
+                + bytes([flags])
+                + b"\x00\x00\x00\x00"  # mtime
+                + b"\x00\xff"          # xfl, OS
+            )
+
+        oversized_field = b"A" * (gzip._MAX_GZIP_HEADER_FIELD_SIZE + 1)
+
+        # FNAME field too long (combined with FHCRC to hit the slow path)
+        stream = io.BytesIO(make_header(FNAME | FHCRC) + oversized_field)
+        with self.assertRaises(gzip.BadGzipFile):
+            gzip.GzipFile(fileobj=stream).read(1)
+
+        # FCOMMENT field too long
+        stream = io.BytesIO(make_header(FCOMMENT | FHCRC) + oversized_field)
+        with self.assertRaises(gzip.BadGzipFile):
+            gzip.GzipFile(fileobj=stream).read(1)
+
+        # Fields right at the limit (with NUL terminator) must still work
+        valid_field = b"A" * gzip._MAX_GZIP_HEADER_FIELD_SIZE + b"\x00"
+        header = make_header(FNAME) + valid_field
+        # No exception expected; only FNAME set so fast-path is used
+        # (stream has no payload so decompression will raise, not header parse)
+        with self.assertRaisesRegex(Exception, ""):
+            gzip.GzipFile(fileobj=io.BytesIO(header)).read(1)
+
     def test_read_truncated(self):
         data = data1*50
         # Drop the CRC (4 bytes) and file size (4 bytes).
